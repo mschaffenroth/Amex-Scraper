@@ -1,6 +1,5 @@
 import sys
 import os
-import helper as hlp
 import requests
 import time
 from dateutil import parser
@@ -8,7 +7,7 @@ from pytz import timezone
 from datetime import datetime, timedelta
 import urllib
 import subprocess
-from StringIO import *
+import io
 from bs4 import BeautifulSoup
 import re
 import pandas as pd
@@ -80,38 +79,22 @@ class Amex:
     
     def load_history(self):
         # CSV Download
-        dwld_page = 'https://online.americanexpress.com/myca/ofxdl/us/domesticDownload.do?request_type=authreg_ofxdownload'
-        data = {
-        'sorted_index' : '0',
-        'Face' : 'en_US',
-        'request_type' : 'authreg_ofxdownload', 
-        'formatType' : '6',
-        'appVerID' : 'CSV|0100',
-        'cardSelected' : 'Y',
-        'BPIndex' : '',
-        'ApplID' : '',
-        'logoutURL' : 'https://online.americanexpress.com/myca/logon/us/action?request_type=LogLogoffHandler&Face=en_US&inav=Logout',
-        'ofxURL' : 'https://online.americanexpress.com/myca/ofxdl/us/domesticOptions.do?request_type=authreg_ofxdownload',
-        'estmtQBURL' : 'https://online.americanexpress.com/myca/estmt/us/list.do?request_type=authreg_Statement',
-        'Hidden' : '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~AAAAE1NlbGVjdGVkU29ydGVkSW5kZXgAAAAIrO0ABXQAATA=~~',
-        'numAccts' : '<bean:write name="cardList" property="size"/>',
-        'appID' : 'QACT',
-        'value(timeFrame0)' : 'downloadDates',
-        'value(cycleCut00)' : 'on',
-        'value(cycleCut01)' : 'on',
-        'value(cycleCut02)' : 'on',
-        'value(cycleCut03)' : 'on',
-        'value(cycleCut04)' : 'on',
-        'value(cycleCut05)' : 'on',
-        'value(cycleCut06)' : 'on',
-        'value(cycleCut07)' : 'on',
-        'value(cycleCut08)' : 'on',
-        'value(cycleCut09)' : 'on',
-        'value(cycleCut10)' : 'on',
+        dwld_page1='https://global.americanexpress.com/myca/intl/download/emea/download.do?request_type=&Face=de_DE&sorted_index=0&omnlogin=de_lilo_myca'
+        dwld_page='https://global.americanexpress.com/myca/intl/download/emea/downloadofx.do?request_type=&Face=de_DE'
+        headers={
+                'content-type': 'application/x-www-form-urlencoded',
         }
-        hist = self.s.post(dwld_page, data=data)
-        df = pd.read_csv(StringIO(hist.text), names=['date', 'ref', 'value', 'store', 'store_id'])
-        df = df[[type(pd.to_datetime(t)) == pd.tslib.Timestamp for t in df.date]]
+        data = [
+                ('Format', 'CSV'),
+                ('downloadFormat', 'on'),
+        ]
+        hist = self.s.get(dwld_page1)
+        bs_data = [ (x['name'],x['value']) for x in BeautifulSoup(hist.text, "lxml").find('form', {'name': 'DownloadForm'}).findAll('input') if 'value' in x.attrs]
+        bs_data = [ (x['name'],x['value']) for x in BeautifulSoup(hist.text, "lxml").findAll('input', {'name': 'selectradio'}) if 'value' in x.attrs] + bs_data
+        data= [x for x in bs_data if x[0] not in [x[0] for x in data]] + data
+        hist = self.s.post(dwld_page, data=data, headers=headers)
+        df = pd.read_csv(io.StringIO(hist.text), names=['date', 'ref', 'value', 'store', 'store_id'], index_col=False)
+        df = df[[type(pd.to_datetime(t)) == pd.Timestamp for t in df.date]]
         df = df[df.value.isnull()==False]
         df.date = pd.to_datetime(df.date)
         return df
